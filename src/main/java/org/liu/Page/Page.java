@@ -185,47 +185,51 @@ public class Page implements Serializable {
                 for (Row row : rows) {
                     int PrimaryValue = row.getFields().get(PrimaryPos).getIntValue();
                     int indexValue = (int) row.getFields().get(tree.getIndexPos()).getValue();
-                    tree.insert(PrimaryValue, indexValue);
+                    tree.insert(indexValue, PrimaryValue);
                 }
                 tree.setIndexName(indexInfo.getIndexName());
+                tree.setColumnName(indexInfo.getColumnName());
                 indexManager.intTreeMap.put(indexInfo.getIndexName(), tree);
             }
             case "string" -> {
-                BPlusTree<Integer, String> tree = new BPlusTree<>(171, getFieldPos(indexInfo.getColumnName()));
+                BPlusTree<String, Integer> tree = new BPlusTree<>(171, getFieldPos(indexInfo.getColumnName()));
                 for (Row row : rows) {
                     int PrimaryValue = row.getFields().get(PrimaryPos).getIntValue();
                     String indexValue = (String) row.getFields().get(tree.getIndexPos()).getValue();
-                    tree.insert(PrimaryValue, indexValue);
+                    tree.insert(indexValue, PrimaryValue);
                 }
                 tree.setIndexName(indexInfo.getIndexName());
+                tree.setColumnName(indexInfo.getColumnName());
                 indexManager.charTreeMap.put(indexInfo.getIndexName(), tree);
             }
             case "float" -> {
-                BPlusTree<Integer, Float> tree = new BPlusTree<>(171, getFieldPos(indexInfo.getColumnName()));
+                BPlusTree<Float, Integer> tree = new BPlusTree<>(171, getFieldPos(indexInfo.getColumnName()));
                 for (Row row : rows) {
                     int PrimaryValue = row.getFields().get(PrimaryPos).getIntValue();
                     Float indexValue = (Float) row.getFields().get(tree.getIndexPos()).getValue();
-                    tree.insert(PrimaryValue, indexValue);
+                    tree.insert(indexValue, PrimaryValue);
                 }
                 tree.setIndexName(indexInfo.getIndexName());
+                tree.setColumnName(indexInfo.getColumnName());
                 indexManager.floatTreeMap.put(indexInfo.getIndexName(), tree);
             }
         }
+        indexManager.ColumnNames.add(indexInfo.getColumnName());
     }
 
 
     public void DropIndex(IndexInfo indexInfo) throws MyExceptionHandler {
-        if(indexInfo.getIndexName().equals(indexManager.PrimaryIndex.getIndexName())){
-            throw new MyExceptionHandler(0,"不能删除主键索引");
+        if (indexInfo.getIndexName().equals(indexManager.PrimaryIndex.getIndexName())) {
+            throw new MyExceptionHandler(0, "不能删除主键索引");
         }
-        switch (indexInfo.getType()){
-            case "int"->{
+        switch (indexInfo.getType()) {
+            case "int" -> {
                 indexManager.intTreeMap.remove(indexInfo.getIndexName());
             }
-            case "string"->{
+            case "string" -> {
                 indexManager.charTreeMap.remove(indexInfo.getIndexName());
             }
-            case "float"->{
+            case "float" -> {
                 indexManager.floatTreeMap.remove(indexInfo.getIndexName());
             }
         }

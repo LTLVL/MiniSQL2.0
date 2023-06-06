@@ -3,9 +3,11 @@ package org.liu.RecordManager.Record;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @AllArgsConstructor
 @Data //对应于一条记录中某一个字段的数据信息，如存储数据的数据类型，是否是空，存储数据的值等等；
-public class Field {
+public class Field implements Serializable {
     private String type;
     private boolean isNull;
     private Integer intValue = -1;

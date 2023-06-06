@@ -2,6 +2,7 @@ package org.liu.BufferManager;
 
 import com.alibaba.fastjson2.JSON;
 import lombok.Data;
+import org.apache.commons.lang.SerializationUtils;
 import org.liu.Common.MyExceptionHandler;
 import org.liu.IndexManager.IndexInfo;
 import org.liu.IndexManager.IndexManager;
@@ -23,10 +24,9 @@ import java.util.Objects;
 @Data
 public class BufferManager { //数据库实例
     private final int MAXNUM = 50;  //maximum numbers
-    private final int EOF = -1; //none-exist num
+    //private final int EOF = -1; //none-exist num
     public Page[] buffer = new Page[MAXNUM];
     private String FileName = "";
-    private String IndexFileName = "";
     private String name = "";
 
     public void CreateIndex(IndexInfo indexInfo) throws MyExceptionHandler {
@@ -193,20 +193,30 @@ public class BufferManager { //数据库实例
     }
 
     public long SelectTable(String tableName, Condition condition) throws MyExceptionHandler {
+        // select * from account where name = "name56789"
         long startTime = System.currentTimeMillis();
         Page page = GetPageByName(tableName);
         if (!page.isUsed()) {
             throw new MyExceptionHandler(0, "该表不存在");
         }
+        if(!page.getIndexManager().contains(condition.getName())){
+            System.out.println("----------------------------------------------");
+            System.out.println(page.getTablePageHeader().getSchema());
+            List<Row> rows = page.getRows();
+            for (Row row : rows) {
+                Field field1 = row.getFields().get(page.getFieldPos(condition.getName()));
+                if (condition.satisfy(field1)) {
+                    System.out.println(row);
+                }
+            }
+            System.out.println("----------------------------------------------");
+            long endTime = System.currentTimeMillis();
+            return endTime - startTime;
+        }
+        //查索引
         System.out.println("----------------------------------------------");
         System.out.println(page.getTablePageHeader().getSchema());
-        List<Row> rows = page.getRows();
-        for (Row row : rows) {
-            Field field1 = row.getFields().get(page.getFieldPos(condition.getName()));
-            if (condition.satisfy(field1)) {
-                System.out.println(row);
-            }
-        }
+        page.getIndexManager().select(condition);
         System.out.println("----------------------------------------------");
         long endTime = System.currentTimeMillis();
         return endTime - startTime;
@@ -315,6 +325,7 @@ public class BufferManager { //数据库实例
         IndexManager indexManager = page.getIndexManager();
         for (int i = 0; i < rows.size(); i++) {
             Row row = rows.get(i);
+            Row old = (Row) SerializationUtils.clone(row);
             Field field1 = row.getFields().get(page.getFieldPos(condition.getName()));
             if (condition.satisfy(field1)) {
                 List<Field> fields = row.getFields();
@@ -322,7 +333,7 @@ public class BufferManager { //数据库实例
                     Field field = row.getFields().get(page.getFieldPos(data.getName()));
                     field.setValue(data.getValue());
                 }
-                indexManager.Update(i,row);
+                indexManager.Update(i, old, row);
             }
         }
         long endTime = System.currentTimeMillis();
@@ -336,9 +347,11 @@ public class BufferManager { //数据库实例
         if (!page.isUsed()) {
             throw new MyExceptionHandler(0, "该表不存在");
         }
+        IndexManager indexManager = page.getIndexManager();
         List<Row> rows = page.getRows();
         for (int i = 0; i < rows.size(); i++) {
             Row row = rows.get(i);
+            Row old = (Row) SerializationUtils.clone(row);
             Row res = new Row();
             Field field0 = row.getFields().get(page.getFieldPos(conditions.get(0).getName()));
             boolean flag = conditions.get(0).satisfy(field0);
@@ -358,6 +371,7 @@ public class BufferManager { //数据库实例
                     Field field = row.getFields().get(page.getFieldPos(data.getName()));
                     field.setValue(data.getValue());
                 }
+                indexManager.Update(i, old, row);
             }
         }
         long endTime = System.currentTimeMillis();
@@ -368,6 +382,7 @@ public class BufferManager { //数据库实例
     public void DeleteTuple(String tableName) throws MyExceptionHandler {
         Page page = GetPageByName(tableName);
         List<Row> rows = page.getRows();
+        page.getIndexManager().Clear(rows);
         rows.clear();
         System.out.println(page.getTablePageHeader().getTableName() + "表所有数据删除成功！");
     }
@@ -396,6 +411,7 @@ public class BufferManager { //数据库实例
             }
             if (flag) {
                 iterator.remove();
+                page.getIndexManager().Delete(row);
             }
         }
         long endTime = System.currentTimeMillis();

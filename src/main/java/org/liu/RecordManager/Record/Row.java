@@ -1,10 +1,8 @@
 package org.liu.RecordManager.Record;
-
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 import org.openjdk.jol.info.ClassLayout;
-
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +17,6 @@ public class Row implements Serializable {
 //    }};
     private Long RowId;
     private boolean DeleteMask = false; //标记记录是否被删除
-
     public Long getRowSize() {
         return ClassLayout.parseInstance(this).instanceSize();
     }
@@ -32,5 +29,6 @@ public class Row implements Serializable {
         }
         return s.toString();
     }
+
 
 }
