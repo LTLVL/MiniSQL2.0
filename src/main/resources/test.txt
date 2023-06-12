@@ -1,0 +1,44 @@
+create database db01;
+use database db01;
+show databases;
+create table account(
+  id int, 
+  name char(16) unique, 
+  balance float, 
+  primary key(id)
+);
+run D:\MiniSQL\account00.txt;
+
+select * from account;
+select * from account where id = 12509994;
+select * from account where id > 12509994;
+select * from account where id >= 12509994;
+select * from account where id < 12500004;
+select * from account where id <= 12500004;
+select * from account where id <> 12500004;
+
+select * from account where balance = 312.04;
+select * from account where balance < 2.0;
+select * from account where balance > 999.35;
+select * from account where balance <> 999;
+select * from account where balance <= 2.0;
+select * from account where balance >= 999.35;
+
+select * from account where name = "name0008";
+select * from account where name > "name9990";
+
+select * from account where id < 12505000 and name > "name4990";
+select id, name from account where balance >= 999.35 and balance < 1000.0;
+select id, name, balance from account where balance > 999.35 and id <= 12501004;
+
+insert into account values(12500000, name10000, 123);
+
+select * from account where name < "name5999";
+select * from account where name = "name5678";
+create index idx01 on account(name);
+select * from account where name = "name5678";
+select * from account where name < "name5999";
+
+delete from account where name = "name5678";
+delete from account;
+drop table account;
