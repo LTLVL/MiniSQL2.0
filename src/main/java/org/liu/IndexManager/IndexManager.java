@@ -3,6 +3,7 @@ package org.liu.IndexManager;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.liu.Common.MyExceptionHandler;
 import org.liu.RecordManager.Record.Record;
 import org.liu.RecordManager.Record.*;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 
 @Data
@@ -44,9 +46,10 @@ public class IndexManager {
         return true;
     }
 
-    public void select(Condition cond) throws IllegalArgumentException {
+    public List<Row> select(Condition cond) throws IllegalArgumentException {
         // select * from account where name = "name56789"
         String indexName = cond.getName();
+        List<Row> res = new ArrayList<>();
         if (PrimaryIndex.getColumnName().equals(indexName)) {
             List<Row> query = new ArrayList<>();
             Integer first = PrimaryIndex.searchFirst();
@@ -62,14 +65,7 @@ public class IndexManager {
                 case ">=" -> query.addAll(PrimaryIndex.rangeQuery((Integer) cond.getValue(), last));
                 case "<=" -> query.addAll(PrimaryIndex.rangeQuery(first, (Integer) cond.getValue()));
             }
-            for (Row row : query) {
-                System.out.println(row);
-            }
-            try {
-                throw new MyExceptionHandler(0,"退出循环");
-            } catch (MyExceptionHandler e) {
-
-            }
+            return query;
         }
         intTreeMap.forEach((s, Tree) -> {
             if (Tree.getColumnName().equals(cond.getName())) {
@@ -92,16 +88,17 @@ public class IndexManager {
                     List<Row> query1 = PrimaryIndex.query(integer);
                     rows.addAll(query1);
                 }
-                for (Row row : rows) {
-                    System.out.println(row);
-                }
+                res.addAll(rows);
                 try {
-                    throw new MyExceptionHandler(0,"退出循环");
+                    throw new MyExceptionHandler(0, "退出循环");
                 } catch (MyExceptionHandler e) {
 
                 }
             }
         });
+        if (res.size() != 0) {
+            return res;
+        }
         charTreeMap.forEach((s, Tree) -> {
             if (Tree.getColumnName().equals(cond.getName())) {
                 List<Integer> query = new ArrayList<>();
@@ -133,16 +130,17 @@ public class IndexManager {
                     List<Row> query1 = PrimaryIndex.query(integer);
                     rows.addAll(query1);
                 }
-                for (Row row : rows) {
-                    System.out.println(row);
-                }
+                res.addAll(rows);
                 try {
-                    throw new MyExceptionHandler(0,"退出循环");
+                    throw new MyExceptionHandler(0, "退出循环");
                 } catch (MyExceptionHandler e) {
 
                 }
             }
         });
+        if (res.size() != 0) {
+            return res;
+        }
         floatTreeMap.forEach((s, Tree) -> {
             if (Tree.getColumnName().equals(cond.getName())) {
                 List<Integer> query = new ArrayList<>();
@@ -174,16 +172,25 @@ public class IndexManager {
                     List<Row> query1 = PrimaryIndex.query(integer);
                     rows.addAll(query1);
                 }
-                for (Row row : rows) {
-                    System.out.println(row);
-                }
+                res.addAll(rows);
             }
         });
+        return res;
     }
 
-    public void select(List<Condition> conditions, List<String> relations) throws IllegalArgumentException{
-
-
+    public List<Row> select(List<Condition> conditions, List<String> relations) throws IllegalArgumentException {
+        //select * from account where id < 12508200 and name < "name00100"
+        List<Row> res = new ArrayList<>(select(conditions.get(0)));
+        for (int i = 1; i < conditions.size(); i++) {
+            if(relations.get(i-1).equals("and")){
+                List<Row> B = select(conditions.get(i));
+                res = (List<Row>) CollectionUtils.intersection(B,res);
+            }else if(relations.get(i-1).equals("or")){
+                List<Row> B = select(conditions.get(i));
+                res = (List<Row>) CollectionUtils.union(B,res);
+            }
+        }
+        return res;
     }
 
     public void insert(Row row) throws IllegalArgumentException {
@@ -216,7 +223,7 @@ public class IndexManager {
     }
 
 
-    public void Update(int i, Row old, Row row) {
+    public void Update(Row old, Row row) {
         PrimaryIndex.remove((Integer) old.getFields().get(getPrimaryIndex().IndexPos).getValue());
         PrimaryIndex.insert((Integer) row.getFields().get(getPrimaryIndex().IndexPos).getValue(), row);
         intTreeMap.forEach((s, Tree) -> {

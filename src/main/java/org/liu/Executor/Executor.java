@@ -177,8 +177,6 @@ public class Executor {
             }
         } catch (IOException e) {
             System.out.println(e.getMessage());
-        } catch (MyExceptionHandler e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -496,5 +494,102 @@ public class Executor {
         } catch (MyExceptionHandler e) {
             e.printStackTrace();
         }
+    }
+
+    public static void DropIndex(String s) {
+        String[] split = s.trim().toLowerCase().replaceAll(";", "").replaceAll("\"", "").split("\\s+");
+        String index = split[2];
+        try {
+            catalogManager.DropIndex(index);
+        } catch (MyExceptionHandler e) {
+            e.fillInStackTrace();
+        }
+
+    }
+
+    public static void UpdateTuple(String s) {
+        //update from account set id = ?, balance = ? where name = "name56789";
+        String[] split = s.trim().toLowerCase().replaceAll(",", "").replaceAll(";", "").replaceAll("\"", "").split("\\s+");
+        String table = split[2];
+        List<Condition> datas = new ArrayList<>();
+        int pos = 4;
+        for (int i = pos; i < split.length; i += 3) {
+            if (split[i].equals("where")) {
+                pos = i;
+                break;
+            }
+            String name = split[i];
+            String operator = split[i + 1];
+            String value = split[i + 2];
+            try {
+                String type = catalogManager.GetTypeByName(table, name);
+                switch (type) {
+                    case "int" -> {
+                        Condition<Integer> data = new Condition<>(name, operator, Integer.valueOf(value));
+                        datas.add(data);
+                    }
+                    case "float" -> {
+                        Condition<Float> data = new Condition<>(name, operator, Float.valueOf(value));
+                        datas.add(data);
+                    }
+                    case "string" -> {
+                        Condition<String> data = new Condition<>(name, operator, value);
+                        datas.add(data);
+                    }
+                }
+            } catch (MyExceptionHandler e) {
+                e.fillInStackTrace();
+            }
+        }
+
+        //update from account set id = ?, balance = ? where name = "name56789" and id > 1000000;
+        List<Condition> conditions = new ArrayList<>();
+        List<String> relations = new ArrayList<>();
+        Page page = null;
+        try {
+            page = catalogManager.bufferManager.GetPageByName(table);
+        } catch (MyExceptionHandler e) {
+            e.fillInStackTrace();
+        }
+        for (int i = pos + 1; i < split.length; i += 4) {
+            String name = split[i];
+            String type = null;
+            try {
+                assert page != null;
+                type = page.GetTypeByName(split[i]);
+            } catch (MyExceptionHandler e) {
+                e.printStackTrace();
+            }
+            String operator = split[i + 1];
+            String value = split[i + 2].replaceAll("\"", "");
+            switch (Objects.requireNonNull(type)) {
+                case "int" -> {
+                    Integer integer = Integer.parseInt(value);
+                    Condition<Integer> condition = new Condition<>(name, operator, integer);
+                    conditions.add(condition);
+                }
+                case "float" -> {
+                    Float aFloat = Float.parseFloat(value);
+                    Condition<Float> condition = new Condition<>(name, operator, aFloat);
+                    conditions.add(condition);
+                }
+                case "string" -> {
+                    Condition<String> condition = new Condition<>(name, operator, value);
+                    conditions.add(condition);
+                }
+            }
+            if (i + 3 < split.length) {
+                relations.add(split[i + 3]);
+            }
+        }
+        try {
+            if(relations.size()==0){
+                catalogManager.bufferManager.UpdateTuple(table,datas,conditions.get(0));
+            }
+            catalogManager.bufferManager.UpdateTuple(table, datas, conditions, relations);
+        } catch (MyExceptionHandler e) {
+            e.fillInStackTrace();
+        }
+
     }
 }

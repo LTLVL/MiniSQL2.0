@@ -7,7 +7,6 @@ import org.liu.Common.MyExceptionHandler;
 import org.liu.IndexManager.BPlusTree;
 import org.liu.IndexManager.IndexInfo;
 import org.liu.IndexManager.IndexManager;
-import org.liu.Main;
 import org.liu.Page.Page;
 import org.liu.RecordManager.Record.*;
 
@@ -17,10 +16,8 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
 @Data
 public class BufferManager { //数据库实例
@@ -221,14 +218,16 @@ public class BufferManager { //数据库实例
         //查索引
         System.out.println("----------------------------------------------");
         System.out.println(page.getTablePageHeader().getSchema());
-        page.getIndexManager().select(condition);
+        List<Row> rows = page.getIndexManager().select(condition);
+        for (Row row : rows) {
+            System.out.println(row);
+        }
         System.out.println("----------------------------------------------");
         long endTime = System.currentTimeMillis();
         return endTime - startTime;
     }
 
     public long SelectTable(String tableName, List<Condition> conditions, List<String> relations) throws MyExceptionHandler {
-        long startTime = System.currentTimeMillis();
         Page page = GetPageByName(tableName);
         if (!page.isUsed()) {
             throw new MyExceptionHandler(0, "该表不存在");
@@ -238,6 +237,7 @@ public class BufferManager { //数据库实例
             GoIndex = GoIndex && page.getIndexManager().ColumnNames.contains(condition.getName());
         }
         if (!GoIndex) {
+            long startTime = System.currentTimeMillis();
             System.out.println("----------------------------------------------");
             System.out.println(page.getTablePageHeader().getSchema());
             List<Row> rows = page.getRows();
@@ -260,8 +260,16 @@ public class BufferManager { //数据库实例
                 }
             }
             System.out.println("----------------------------------------------");
+            long endTime = System.currentTimeMillis();
+            return endTime - startTime;
         }
-        page.getIndexManager().select(conditions, relations); //索引查询
+        long startTime = System.currentTimeMillis();
+        List<Row> rows = page.getIndexManager().select(conditions, relations);//索引查询
+        System.out.println("----------------------------------------------");
+        for (Row row : rows) {
+            System.out.println(row);
+        }
+        System.out.println("----------------------------------------------");
         long endTime = System.currentTimeMillis();
         return endTime - startTime;
     }
@@ -348,7 +356,7 @@ public class BufferManager { //数据库实例
                     Field field = row.getFields().get(page.getFieldPos(data.getName()));
                     field.setValue(data.getValue().toString());
                 }
-                indexManager.Update(i, old, row);
+                indexManager.Update(old, row);
             }
         }
         long endTime = System.currentTimeMillis();
@@ -370,11 +378,18 @@ public class BufferManager { //数据库实例
             Field field0 = row.getFields().get(page.getFieldPos(conditions.get(0).getName()));
             boolean flag = conditions.get(0).satisfy(field0);
             for (int i1 = 1; i1 < conditions.size(); i1++) {
-                field0 = row.getFields().get(page.getFieldPos(conditions.get(i).getName()));
+                field0 = row.getFields().get(page.getFieldPos(conditions.get(i1).getName()));
                 if (relations.get(i1 - 1).equals("and")) {
-                    flag &= conditions.get(i1).satisfy(field0);
+                    String type = page.GetTypeByName(conditions.get(i1).getName());
+                    if(field0.getType().equals(type)){
+                        flag &= conditions.get(i1).satisfy(field0);
+                    }
+
                 } else if (relations.get(i1 - 1).equals("or")) {
-                    flag |= conditions.get(i1).satisfy(field0);
+                    String type = page.GetTypeByName(conditions.get(i1).getName());
+                    if(field0.getType().equals(type)){
+                        flag |= conditions.get(i1).satisfy(field0);
+                    }
                 } else {
                     throw new MyExceptionHandler(0, "表达式错误");
                 }
@@ -385,7 +400,7 @@ public class BufferManager { //数据库实例
                     Field field = row.getFields().get(page.getFieldPos(data.getName()));
                     field.setValue(data.getValue().toString());
                 }
-                indexManager.Update(i, old, row);
+                indexManager.Update(old, row);
             }
         }
         long endTime = System.currentTimeMillis();

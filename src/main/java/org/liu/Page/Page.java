@@ -254,6 +254,7 @@ public class Page implements Serializable {
                 indexManager.floatTreeMap.remove(indexInfo.getIndexName());
             }
         }
+        this.getIndexManager().getColumnNames().remove(indexInfo.getColumnName());
     }
 }
 

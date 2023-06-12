@@ -56,7 +56,7 @@ public class Field implements Serializable {
         }
     }
 
-    public <T extends Comparable<? super T>> int compareTo(Object cmpValue) {
+    public int compareTo(Object cmpValue) {
         switch (type) {
             case "int" -> {
                 return intValue.compareTo((Integer) cmpValue);

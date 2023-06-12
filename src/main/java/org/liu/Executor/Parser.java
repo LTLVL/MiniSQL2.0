@@ -8,16 +8,16 @@ import java.util.List;
 
 public class Parser {
 
-    public static void parse(String s) throws MyExceptionHandler, FileNotFoundException {
+    public static void parse(String s) throws FileNotFoundException {
         parseSentence(s);
     }
 
-    public static void parseSentence(String s) throws MyExceptionHandler, FileNotFoundException {
-        String[] split = s.trim().toLowerCase().replaceAll(";","").replaceAll(",","").split("\\s+");
-        if(split[0].equals("select")){
+    public static void parseSentence(String s) throws FileNotFoundException {
+        String[] split = s.trim().toLowerCase().replaceAll(";", "").replaceAll(",", "").split("\\s+");
+        if (split[0].equals("select")) {
             Executor.SelectTuple(s);
         }
-        if(split[0].equals("run")){ // 运行sql文件
+        if (split[0].equals("run")) { // 运行sql文件
             Executor.RunSqlFile(s);
         }
         if (split[0].equals("show") && split[1].equals("databases")) {
@@ -36,25 +36,31 @@ public class Parser {
             Executor.CreateTable(s);
             return;
         }
-        if(split[0].equals("insert")&&split[1].equals("into")){
+        if (split[0].equals("insert") && split[1].equals("into")) {
             Executor.InsertTuple(s);
         }
-        if(split[0].equals("delete")&&split[1].equals("from")){
+        if (split[0].equals("delete") && split[1].equals("from")) {
             Executor.DeleteTuple(s);
         }
-        if(split[0].equals("create")&&split[1].equals("index")){
+        if (split[0].equals("update") && split[1].equals("from")) {
+            Executor.UpdateTuple(s);
+        }
+        if (split[0].equals("create") && split[1].equals("index")) {
             Executor.CreateIndex(s);
         }
-        if(split[0].equals("drop")&&split[1].equals("table")){
+        if (split[0].equals("drop") && split[1].equals("table")) {
             Executor.DropTable(s);
         }
-        if(split[0].equals("exit")){
+        if (split[0].equals("drop") && split[1].equals("index")) {
+            Executor.DropIndex(s);
+        }
+        if (split[0].equals("exit")) {
             Executor.Exit();
         }
 
     }
 
-    public static void Start(){
+    public static void Start() {
         Executor.Start();
     }
 }
