@@ -25,6 +25,19 @@ public class BPlusTree<K extends Comparable<K>, E> implements Serializable { //K
         this.UNDERFLOW_BOUND = OVERFLOW_BOUND / 2;
     }
 
+    public K searchFirst(){
+        if (root == null) {
+            return null;
+        }
+        return root.searchFirst();
+    }
+
+    public K searchLast(){
+        if (root == null) {
+            return null;
+        }
+        return root.searchLast();
+    }
     public void insert(K entry, E value) {
         if (root == null) {
             root = new BPlusTreeLeafNode(asList(entry), asList(asSet(value)));
@@ -162,6 +175,10 @@ public class BPlusTree<K extends Comparable<K>, E> implements Serializable { //K
         public abstract void combine(BPlusTreeNode neighbor, K parentEntry);
 
         public abstract void borrow(BPlusTreeNode neighbor, K parentEntry, boolean isLeft);
+
+        public abstract K searchFirst();
+
+        public abstract K searchLast();
     }
 
 
@@ -313,6 +330,16 @@ public class BPlusTree<K extends Comparable<K>, E> implements Serializable { //K
             }
         }
 
+        @Override
+        public K searchFirst() {
+            return this.children.get(0).entries.get(0);
+        }
+
+        @Override
+        public K searchLast() {
+            return this.children.get(children.size()-1).searchLast();
+        }
+
         public K findLeafEntry(BPlusTreeNode cur) {
             if (cur.getClass().equals(BPlusTreeLeafNode.class)) {
                 return cur.entries.get(0);
@@ -453,6 +480,16 @@ public class BPlusTree<K extends Comparable<K>, E> implements Serializable { //K
 
             leafNode.entries.remove(borrowIndex);
             leafNode.data.remove(borrowIndex);
+        }
+
+        @Override
+        public K searchFirst() {
+            return null;
+        }
+
+        @Override
+        public K searchLast() {
+            return this.entries.get(entries.size()-1);
         }
 
         @Override

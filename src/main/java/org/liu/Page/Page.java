@@ -34,7 +34,7 @@ public class Page implements Serializable {
     //private int referenceCount;
     private TablePageHeader tablePageHeader = new TablePageHeader();
     @JSONField(serialize = false)
-    private IndexManager indexManager;
+    private IndexManager indexManager = new IndexManager();
     private FreeSpace freeSpace = new FreeSpace();
     private final List<Row> rows = new ArrayList<>();
 
@@ -75,14 +75,20 @@ public class Page implements Serializable {
     //
     public boolean InsertRecord(Row row) throws MyExceptionHandler {
         Long rowSize = row.getRowSize();
-        if (this.freeSpace.getFreeSize() < rowSize)
-            return false;
+//        if (this.freeSpace.getFreeSize() < rowSize)
+//            return false;
         List<Column> columns = this.getTablePageHeader().getSchema().getColumns();
         for (int i = 0; i < columns.size(); i++) {
-            if (columns.get(i).isPrimaryKey() || columns.get(i).isUnique()) {
-                for (int j = 0; j < rows.size(); j++) {
-                    if (rows.get(j).getFields().get(i).getValue().equals(row.getFields().get(i).getValue())) {
-                        throw new MyExceptionHandler(0, "唯一约束冲突");
+            if (columns.get(i).isPrimaryKey()) {
+                for (Row value : rows) {
+                    if (value.getFields().get(i).getValue().equals(row.getFields().get(i).getValue())) {
+                        throw new MyExceptionHandler(0, "PRIMARY KEY约束冲突");
+                    }
+                }
+            }else if(columns.get(i).isUnique()){
+                for (Row value : rows) {
+                    if (value.getFields().get(i).getValue().equals(row.getFields().get(i).getValue())) {
+                        throw new MyExceptionHandler(0, "UNIQUE约束冲突");
                     }
                 }
             }
@@ -178,7 +184,21 @@ public class Page implements Serializable {
         return null;
     }
 
-    public void CreateIndex(IndexInfo indexInfo) {
+    public BPlusTree CreateIndex(IndexInfo indexInfo) {
+        String primaryColumnName = this.tablePageHeader.getSchema().getColumns().get(this.PrimaryPos).getName();
+        if(indexInfo.getColumnName().equals(primaryColumnName)){
+            BPlusTree<Integer, Row> tree = new BPlusTree<>(171, getFieldPos(indexInfo.getColumnName()));
+            for (Row row : rows) {
+                int PrimaryValue = row.getFields().get(PrimaryPos).getIntValue();
+                int indexValue = (int) row.getFields().get(tree.getIndexPos()).getValue();
+                tree.insert(indexValue, row);
+            }
+            tree.setIndexName(indexInfo.getIndexName());
+            tree.setColumnName(indexInfo.getColumnName());
+            this.indexManager.setPrimaryIndex(tree);
+            //this.indexManager.PrimaryIndex = tree;
+            return tree;
+        }
         switch (indexInfo.getType()) {
             case "int" -> {
                 BPlusTree<Integer, Integer> tree = new BPlusTree<>(171, getFieldPos(indexInfo.getColumnName()));
@@ -215,6 +235,7 @@ public class Page implements Serializable {
             }
         }
         indexManager.ColumnNames.add(indexInfo.getColumnName());
+        return null;
     }
 
 

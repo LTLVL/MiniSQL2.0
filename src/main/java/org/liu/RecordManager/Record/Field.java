@@ -1,5 +1,6 @@
 package org.liu.RecordManager.Record;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -36,11 +37,6 @@ public class Field implements Serializable {
         this.stringValue = stringValue;
         this.pos = pos;
     }
-
-    //    @Override
-//    public int compareTo(T t) {
-//        return value.compareTo(t);
-//    }
 
     @Override
     public String toString() {
@@ -94,16 +90,17 @@ public class Field implements Serializable {
         }
     }
 
-    public void setValue(Comparable value) {
+    @JSONField(serialize = false)
+    public void setValue(String value) {
         switch (type) {
             case "int" -> {
-                setIntValue((Integer) value);
+                setIntValue(Integer.parseInt(value));
             }
             case "float" -> {
-                setFloatValue((Float) value);
+                setFloatValue(Float.parseFloat(value));
             }
             case "string" -> {
-                setStringValue((String) value);
+                setStringValue(value);
             }
         }
     }

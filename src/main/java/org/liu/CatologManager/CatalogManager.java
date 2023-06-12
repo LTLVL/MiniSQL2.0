@@ -7,6 +7,7 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 import org.liu.BufferManager.BufferManager;
 import org.liu.Common.MyExceptionHandler;
+import org.liu.IndexManager.BPlusTree;
 import org.liu.IndexManager.IndexInfo;
 import org.liu.Page.Page;
 import org.liu.RecordManager.Record.Column;
@@ -41,7 +42,7 @@ public class CatalogManager {
             if (!Files.exists(filepath))
                 return null;
             String s = Files.readString(filepath);
-            return JSON.parseObject(s, new TypeReference<CatalogManager>() {
+            return JSON.parseObject(s, new TypeReference<>() {
             });
             //this.bufferManagers = JSON.parseArray(s, BufferManager.class);
         } catch (IOException e) {
@@ -86,6 +87,12 @@ public class CatalogManager {
         return true;
     }
 
+    public void ShowDataBases() {
+        for (BufferManager manager : bufferManagers) {
+            System.out.println(manager.getName());
+        }
+    }
+
     //通过表名和字段名获取类型
     public String GetTypeByName(String table, String field) throws MyExceptionHandler {
         for (Page page : bufferManager.buffer) {
@@ -99,6 +106,22 @@ public class CatalogManager {
     public void CreateIndex(IndexInfo indexInfo) throws MyExceptionHandler {
         bufferManager.CreateIndex(indexInfo);
         this.indexInfos.add(indexInfo);
+    }
+
+    public void ResumeIndex(IndexInfo indexInfo) throws MyExceptionHandler {
+        String dataBaseName = indexInfo.getDataBaseName();
+        for (BufferManager manager : bufferManagers) {
+            if(manager.getName().equals(dataBaseName)){
+                BPlusTree bPlusTree = manager.CreateIndex(indexInfo);
+                for (Page page : manager.buffer) {
+                    if (page.isUsed() && page.getTablePageHeader().getTableName().equals(indexInfo.getTableName())) {
+                        String primaryColumnName = page.getTablePageHeader().getSchema().getColumns().get(page.getPrimaryPos()).getName();
+                        if (indexInfo.getColumnName().equals(primaryColumnName))
+                            page.getIndexManager().setPrimaryIndex(bPlusTree);
+                    }
+                }
+            }
+        }
     }
 
 
@@ -124,9 +147,7 @@ public class CatalogManager {
                 PrimaryType = column.getType();
             }
         }
-        indexInfos.add(new IndexInfo(
-                tableName + "_primary_index", tableName,
-                PrimaryColumn, PrimaryType, bufferManager.getName()));
+        indexInfos.add(new IndexInfo(tableName + "_primary_index", tableName, PrimaryColumn, PrimaryType, bufferManager.getName()));
     }
 
     public void DropTable(String tableName) throws MyExceptionHandler {

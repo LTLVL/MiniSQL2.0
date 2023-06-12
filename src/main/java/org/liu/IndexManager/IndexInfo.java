@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 public class IndexInfo {
     private String indexName; //索引名
     private String tableName; //表名
@@ -12,10 +11,11 @@ public class IndexInfo {
     private String type; //索引字段的类型
     private String DataBaseName; // 所属数据库名
 
-    public IndexInfo(String indexName, String tableName, String columnName, String type) {
+    public IndexInfo(String indexName, String tableName, String columnName, String type,String dataBaseName) {
         this.indexName = indexName;
         this.tableName = tableName;
         this.columnName = columnName;
         this.type = type;
+        this.DataBaseName = dataBaseName;
     }
 }

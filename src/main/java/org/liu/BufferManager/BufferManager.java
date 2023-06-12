@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import lombok.Data;
 import org.apache.commons.lang.SerializationUtils;
 import org.liu.Common.MyExceptionHandler;
+import org.liu.IndexManager.BPlusTree;
 import org.liu.IndexManager.IndexInfo;
 import org.liu.IndexManager.IndexManager;
 import org.liu.Main;
@@ -29,12 +30,15 @@ public class BufferManager { //数据库实例
     private String FileName = "";
     private String name = "";
 
-    public void CreateIndex(IndexInfo indexInfo) throws MyExceptionHandler {
+    public BPlusTree CreateIndex(IndexInfo indexInfo) throws MyExceptionHandler {
         for (Page page : buffer) {
             if (page.isUsed() && page.getTablePageHeader().getTableName().equals(indexInfo.getTableName())) {
                 indexInfo.setDataBaseName(name);
-                page.CreateIndex(indexInfo);
-                return;
+                BPlusTree bPlusTree = page.CreateIndex(indexInfo);
+                String primaryColumnName = page.getTablePageHeader().getSchema().getColumns().get(page.getPrimaryPos()).getName();
+                if (indexInfo.getColumnName().equals(primaryColumnName))
+                    page.getIndexManager().setPrimaryIndex(bPlusTree);
+                return bPlusTree;
             }
         }
         throw new MyExceptionHandler(0, "当前数据库不存在此表");
@@ -199,7 +203,7 @@ public class BufferManager { //数据库实例
         if (!page.isUsed()) {
             throw new MyExceptionHandler(0, "该表不存在");
         }
-        if(!page.getIndexManager().contains(condition.getName())){
+        if (!page.getIndexManager().ColumnNames.contains(condition.getName())) {
             System.out.println("----------------------------------------------");
             System.out.println(page.getTablePageHeader().getSchema());
             List<Row> rows = page.getRows();
@@ -213,6 +217,7 @@ public class BufferManager { //数据库实例
             long endTime = System.currentTimeMillis();
             return endTime - startTime;
         }
+        startTime = System.currentTimeMillis();
         //查索引
         System.out.println("----------------------------------------------");
         System.out.println(page.getTablePageHeader().getSchema());
@@ -228,28 +233,35 @@ public class BufferManager { //数据库实例
         if (!page.isUsed()) {
             throw new MyExceptionHandler(0, "该表不存在");
         }
-        System.out.println("----------------------------------------------");
-        System.out.println(page.getTablePageHeader().getSchema());
-        List<Row> rows = page.getRows();
-        for (int i = 0; i < rows.size(); i++) {
-            Row row = rows.get(i);
-            Field field0 = row.getFields().get(page.getFieldPos(conditions.get(0).getName()));
-            boolean flag = conditions.get(0).satisfy(field0);
-            for (int i1 = 1; i1 < conditions.size(); i1++) {
-                field0 = row.getFields().get(page.getFieldPos(conditions.get(i).getName()));
-                if (relations.get(i1 - 1).equals("and")) {
-                    flag &= conditions.get(i1).satisfy(field0);
-                } else if (relations.get(i1 - 1).equals("or")) {
-                    flag |= conditions.get(i1).satisfy(field0);
-                } else {
-                    throw new MyExceptionHandler(0, "表达式错误");
+        boolean GoIndex = true; //是否可以走索引
+        for (Condition condition : conditions) {
+            GoIndex = GoIndex && page.getIndexManager().ColumnNames.contains(condition.getName());
+        }
+        if (!GoIndex) {
+            System.out.println("----------------------------------------------");
+            System.out.println(page.getTablePageHeader().getSchema());
+            List<Row> rows = page.getRows();
+            for (int i = 0; i < rows.size(); i++) {
+                Row row = rows.get(i);
+                Field field0 = row.getFields().get(page.getFieldPos(conditions.get(0).getName()));
+                boolean flag = conditions.get(0).satisfy(field0);
+                for (int i1 = 1; i1 < conditions.size(); i1++) {
+                    field0 = row.getFields().get(page.getFieldPos(conditions.get(i1).getName()));
+                    if (relations.get(i1 - 1).equals("and")) {
+                        flag = flag && conditions.get(i1).satisfy(field0);
+                    } else if (relations.get(i1 - 1).equals("or")) {
+                        flag = flag || conditions.get(i1).satisfy(field0);
+                    } else {
+                        throw new MyExceptionHandler(0, "表达式错误");
+                    }
+                }
+                if (flag) {
+                    System.out.println(row);
                 }
             }
-            if (flag) {
-                System.out.println(row);
-            }
+            System.out.println("----------------------------------------------");
         }
-        System.out.println("----------------------------------------------");
+        page.getIndexManager().select(conditions, relations); //索引查询
         long endTime = System.currentTimeMillis();
         return endTime - startTime;
     }
@@ -274,7 +286,7 @@ public class BufferManager { //数据库实例
             Field field0 = row.getFields().get(page.getFieldPos(conditions.get(0).getName()));
             boolean flag = conditions.get(0).satisfy(field0);
             for (int i1 = 1; i1 < conditions.size(); i1++) {
-                field0 = row.getFields().get(page.getFieldPos(conditions.get(i).getName()));
+                field0 = row.getFields().get(page.getFieldPos(conditions.get(i1).getName()));
                 if (relations.get(i1 - 1).equals("and")) {
                     flag &= conditions.get(i1).satisfy(field0);
                 } else if (relations.get(i1 - 1).equals("or")) {
@@ -302,10 +314,13 @@ public class BufferManager { //数据库实例
         if (!page.isUsed()) {
             throw new MyExceptionHandler(0, "该表不存在");
         }
-        page.InsertRecord(row);
+        try {
+            page.InsertRecord(row);
+        } catch (MyExceptionHandler e) {
+            e.printStackTrace();
+        }
         //page.getIndexManager().PrimaryIndex.insert();
         long endTime = System.currentTimeMillis();
-        System.out.println(page.getTablePageHeader().getTableName() + "表插入成功！");
         return endTime - startTime;
     }
 
@@ -331,13 +346,12 @@ public class BufferManager { //数据库实例
                 List<Field> fields = row.getFields();
                 for (Condition data : datas) {
                     Field field = row.getFields().get(page.getFieldPos(data.getName()));
-                    field.setValue(data.getValue());
+                    field.setValue(data.getValue().toString());
                 }
                 indexManager.Update(i, old, row);
             }
         }
         long endTime = System.currentTimeMillis();
-        System.out.println(page.getTablePageHeader().getTableName() + "表更新成功！");
         return endTime - startTime;
     }
 
@@ -369,13 +383,12 @@ public class BufferManager { //数据库实例
                 List<Field> fields = row.getFields();
                 for (Condition data : datas) {
                     Field field = row.getFields().get(page.getFieldPos(data.getName()));
-                    field.setValue(data.getValue());
+                    field.setValue(data.getValue().toString());
                 }
                 indexManager.Update(i, old, row);
             }
         }
         long endTime = System.currentTimeMillis();
-        System.out.println(page.getTablePageHeader().getTableName() + "表更新成功！");
         return endTime - startTime;
     }
 
@@ -386,6 +399,21 @@ public class BufferManager { //数据库实例
         rows.clear();
         System.out.println(page.getTablePageHeader().getTableName() + "表所有数据删除成功！");
     }
+
+    public void DeleteTuple(String tableName, Condition condition) throws MyExceptionHandler {
+        Page page = GetPageByName(tableName);
+        List<Row> rows = page.getRows();
+        Iterator<Row> iterator = rows.iterator();
+        while (iterator.hasNext()) {
+            Row row = iterator.next();
+            Field field1 = row.getFields().get(page.getFieldPos(condition.getName()));
+            if (condition.satisfy(field1)) {
+                iterator.remove();
+                page.getIndexManager().Delete(row);
+            }
+        }
+    }
+
 
     public long DeleteTuple(String tableName, List<Condition> conditions, List<String> relations) throws MyExceptionHandler {
         long startTime = System.currentTimeMillis();
@@ -415,7 +443,6 @@ public class BufferManager { //数据库实例
             }
         }
         long endTime = System.currentTimeMillis();
-        System.out.println(page.getTablePageHeader().getTableName() + "表删除数据成功！");
         return endTime - startTime;
     }
 

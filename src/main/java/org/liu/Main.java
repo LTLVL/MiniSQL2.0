@@ -10,6 +10,7 @@ import org.liu.IndexManager.IndexInfo;
 import org.liu.Page.Page;
 import org.liu.RecordManager.Record.*;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Main {
-    public static void main(String[] args) throws MyExceptionHandler {
+    public static void main(String[] args) throws MyExceptionHandler, FileNotFoundException {
         Interface.StartMiniSQL();
     }
 //    public static void main(String[] args) throws MyExceptionHandler, IOException {

@@ -3,6 +3,7 @@ package org.liu.IndexManager;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.liu.Common.MyExceptionHandler;
 import org.liu.RecordManager.Record.Record;
 import org.liu.RecordManager.Record.*;
 
@@ -14,6 +15,7 @@ import java.util.function.BiConsumer;
 
 @Data
 @Slf4j
+@NoArgsConstructor
 public class IndexManager {
     // 索引名与对应的B+树集合
     private String DataBaseName;
@@ -45,51 +47,143 @@ public class IndexManager {
     public void select(Condition cond) throws IllegalArgumentException {
         // select * from account where name = "name56789"
         String indexName = cond.getName();
-        if(PrimaryIndex.getColumnName().equals(indexName)){
-            List<Row> query = PrimaryIndex.query((Integer) cond.getValue());
+        if (PrimaryIndex.getColumnName().equals(indexName)) {
+            List<Row> query = new ArrayList<>();
+            Integer first = PrimaryIndex.searchFirst();
+            Integer last = PrimaryIndex.searchLast() + 1;
+            switch (cond.getOperator()) {
+                case "=" -> query = PrimaryIndex.query((Integer) cond.getValue());
+                case "<>" -> {
+                    query = PrimaryIndex.rangeQuery(first, (Integer) cond.getValue() - 1);
+                    query.addAll(PrimaryIndex.rangeQuery((Integer) cond.getValue() + 1, last));
+                }
+                case ">" -> query.addAll(PrimaryIndex.rangeQuery((Integer) cond.getValue() + 1, last));
+                case "<" -> query.addAll(PrimaryIndex.rangeQuery(first, (Integer) cond.getValue() - 1));
+                case ">=" -> query.addAll(PrimaryIndex.rangeQuery((Integer) cond.getValue(), last));
+                case "<=" -> query.addAll(PrimaryIndex.rangeQuery(first, (Integer) cond.getValue()));
+            }
             for (Row row : query) {
                 System.out.println(row);
             }
+            try {
+                throw new MyExceptionHandler(0,"退出循环");
+            } catch (MyExceptionHandler e) {
+
+            }
         }
         intTreeMap.forEach((s, Tree) -> {
-            if(Tree.getColumnName().equals(cond.getName())){
-                List<Integer> list = Tree.query((Integer) cond.getValue());
-                List<Row> query = new ArrayList<>();
-                for (Integer integer : list) {
-                    List<Row> query1 = PrimaryIndex.query(integer);
-                    query.addAll(query1);
+            if (Tree.getColumnName().equals(cond.getName())) {
+                List<Integer> query = new ArrayList<>();
+                Integer first = Tree.searchFirst();
+                Integer last = Tree.searchLast() + 1;
+                switch (cond.getOperator()) {
+                    case "=" -> query = Tree.query((Integer) cond.getValue());
+                    case "<>" -> {
+                        query = Tree.rangeQuery(first, (Integer) cond.getValue() - 1);
+                        query.addAll(Tree.rangeQuery((Integer) cond.getValue() + 1, last));
+                    }
+                    case ">" -> query.addAll(Tree.rangeQuery((Integer) cond.getValue() + 1, last));
+                    case "<" -> query.addAll(Tree.rangeQuery(first, (Integer) cond.getValue() - 1));
+                    case ">=" -> query.addAll(Tree.rangeQuery((Integer) cond.getValue(), last));
+                    case "<=" -> query.addAll(Tree.rangeQuery(first, (Integer) cond.getValue()));
                 }
-                for (Row row : query) {
+                List<Row> rows = new ArrayList<>();
+                for (Integer integer : query) {
+                    List<Row> query1 = PrimaryIndex.query(integer);
+                    rows.addAll(query1);
+                }
+                for (Row row : rows) {
                     System.out.println(row);
+                }
+                try {
+                    throw new MyExceptionHandler(0,"退出循环");
+                } catch (MyExceptionHandler e) {
+
                 }
             }
         });
         charTreeMap.forEach((s, Tree) -> {
-            if(Tree.getColumnName().equals(cond.getName())){
-                List<Integer> list = Tree.query((String) cond.getValue());
-                List<Row> query = new ArrayList<>();
-                for (Integer integer : list) {
-                    List<Row> query1 = PrimaryIndex.query(integer);
-                    query.addAll(query1);
+            if (Tree.getColumnName().equals(cond.getName())) {
+                List<Integer> query = new ArrayList<>();
+                String first = Tree.searchFirst();
+                String last = Tree.searchLast();
+                switch (cond.getOperator()) {
+                    case "=" -> query = Tree.query((String) cond.getValue());
+                    case "<>" -> {
+                        query = Tree.rangeQuery(first, last);
+                        query.removeAll(Tree.query((String) cond.getValue()));
+                    }
+                    case ">" -> {
+                        query.addAll(Tree.rangeQuery((String) cond.getValue(), last));
+                        query.removeAll(Tree.query((String) cond.getValue()));
+                        query.addAll(Tree.query(last));
+                    }
+                    case "<" -> query.addAll(Tree.rangeQuery(first, (String) cond.getValue()));
+                    case ">=" -> {
+                        query.addAll(Tree.rangeQuery((String) cond.getValue(), last));
+                        query.addAll(Tree.query(last));
+                    }
+                    case "<=" -> {
+                        query.addAll(Tree.rangeQuery(first, (String) cond.getValue()));
+                        query.addAll(Tree.query((String) cond.getValue()));
+                    }
                 }
-                for (Row row : query) {
+                List<Row> rows = new ArrayList<>();
+                for (Integer integer : query) {
+                    List<Row> query1 = PrimaryIndex.query(integer);
+                    rows.addAll(query1);
+                }
+                for (Row row : rows) {
                     System.out.println(row);
+                }
+                try {
+                    throw new MyExceptionHandler(0,"退出循环");
+                } catch (MyExceptionHandler e) {
+
                 }
             }
         });
         floatTreeMap.forEach((s, Tree) -> {
-            if(Tree.getColumnName().equals(cond.getName())){
-                List<Integer> list = Tree.query((Float) cond.getValue());
-                List<Row> query = new ArrayList<>();
-                for (Integer integer : list) {
-                    List<Row> query1 = PrimaryIndex.query(integer);
-                    query.addAll(query1);
+            if (Tree.getColumnName().equals(cond.getName())) {
+                List<Integer> query = new ArrayList<>();
+                Float first = Tree.searchFirst();
+                Float last = Tree.searchLast() + 1;
+                switch (cond.getOperator()) {
+                    case "=" -> query = Tree.query((Float) cond.getValue());
+                    case "<>" -> {
+                        query = Tree.rangeQuery(first, last);
+                        query.removeAll(Tree.query((Float) cond.getValue()));
+                    }
+                    case ">" -> {
+                        query.addAll(Tree.rangeQuery((Float) cond.getValue(), last));
+                        query.removeAll(Tree.query((Float) cond.getValue()));
+                        query.addAll(Tree.query(last));
+                    }
+                    case "<" -> query.addAll(Tree.rangeQuery(first, (Float) cond.getValue()));
+                    case ">=" -> {
+                        query.addAll(Tree.rangeQuery((Float) cond.getValue(), last));
+                        query.addAll(Tree.query(last));
+                    }
+                    case "<=" -> {
+                        query.addAll(Tree.rangeQuery(first, (Float) cond.getValue()));
+                        query.addAll(Tree.query((Float) cond.getValue()));
+                    }
                 }
-                for (Row row : query) {
+                List<Row> rows = new ArrayList<>();
+                for (Integer integer : query) {
+                    List<Row> query1 = PrimaryIndex.query(integer);
+                    rows.addAll(query1);
+                }
+                for (Row row : rows) {
                     System.out.println(row);
                 }
             }
         });
+    }
+
+    public void select(List<Condition> conditions, List<String> relations) throws IllegalArgumentException{
+
+
     }
 
     public void insert(Row row) throws IllegalArgumentException {
@@ -100,7 +194,6 @@ public class IndexManager {
         charTreeMap.forEach((s, StringBPlusTree) -> StringBPlusTree.insert((String) row.getFields().get(StringBPlusTree.getIndexPos()).getValue(), (Integer) row.getFields().get(primaryPos).getValue()));
         floatTreeMap.forEach((s, FloatBPlusTree) -> FloatBPlusTree.insert((Float) row.getFields().get(FloatBPlusTree.getIndexPos()).getValue(), (Integer) row.getFields().get(primaryPos).getValue()));
     }
-
 
 
     public boolean dropIndex(String name) {
@@ -125,7 +218,7 @@ public class IndexManager {
 
     public void Update(int i, Row old, Row row) {
         PrimaryIndex.remove((Integer) old.getFields().get(getPrimaryIndex().IndexPos).getValue());
-        PrimaryIndex.insert((Integer) row.getFields().get(getPrimaryIndex().IndexPos).getValue(),row);
+        PrimaryIndex.insert((Integer) row.getFields().get(getPrimaryIndex().IndexPos).getValue(), row);
         intTreeMap.forEach((s, Tree) -> {
             Tree.remove((Integer) old.getFields().get(Tree.getIndexPos()).getValue());
             Tree.insert((Integer) row.getFields().get(Tree.getIndexPos()).getValue(), (Integer) row.getFields().get(getPrimaryIndex().IndexPos).getValue());
