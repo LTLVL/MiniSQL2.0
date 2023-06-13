@@ -24,6 +24,10 @@ public class Parser {
             Executor.ShowDataBases();
             return;
         }
+        if (split[0].equals("show") && split[1].equals("tables")) {
+            Executor.ShowTables();
+            return;
+        }
         if (split[0].equals("create") && split[1].equals("database")) {
             Executor.CreateDataBase(split[2]);
             return;

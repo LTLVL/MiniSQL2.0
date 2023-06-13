@@ -42,10 +42,6 @@ public class IndexManager {
         }
     }
 
-    public boolean createIndex(IndexInfo indexInfo) throws RuntimeException {
-        return true;
-    }
-
     public List<Row> select(Condition cond) throws IllegalArgumentException {
         // select * from account where name = "name56789"
         String indexName = cond.getName();
@@ -202,27 +198,6 @@ public class IndexManager {
         floatTreeMap.forEach((s, FloatBPlusTree) -> FloatBPlusTree.insert((Float) row.getFields().get(FloatBPlusTree.getIndexPos()).getValue(), (Integer) row.getFields().get(primaryPos).getValue()));
     }
 
-
-    public boolean dropIndex(String name) {
-        // 删除索引
-        // DROP INDEX index_name (Att_name) ON table_name
-
-        return true;
-    }
-
-//    private <K extends Comparable<? super K>> ArrayList<Object> satisfiesCond(BPlusTree<K, Integer> tree, String operator, K key) throws IllegalArgumentException {
-//        return null;
-//    }
-
-    private int getStoreLength(String tableName) {
-        return 0;
-    }
-
-    private Record getTuple(String tableName, int offset) {
-        return null;
-    }
-
-
     public void Update(Row old, Row row) {
         PrimaryIndex.remove((Integer) old.getFields().get(getPrimaryIndex().IndexPos).getValue());
         PrimaryIndex.insert((Integer) row.getFields().get(getPrimaryIndex().IndexPos).getValue(), row);
@@ -239,7 +214,6 @@ public class IndexManager {
             Tree.insert((Float) row.getFields().get(Tree.getIndexPos()).getValue(), (Integer) row.getFields().get(getPrimaryIndex().IndexPos).getValue());
         });
     }
-
 
     public void Clear(List<Row> rows) {
         for (Row row : rows) {

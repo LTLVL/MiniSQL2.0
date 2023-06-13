@@ -1,5 +1,4 @@
 package org.liu.CatologManager;
-
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.alibaba.fastjson2.annotation.JSONAutowired;
@@ -12,14 +11,12 @@ import org.liu.IndexManager.IndexInfo;
 import org.liu.Page.Page;
 import org.liu.RecordManager.Record.Column;
 import org.liu.RecordManager.Record.Schema;
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 @JSONAutowired
@@ -63,7 +60,6 @@ public class CatalogManager {
             throw new MyExceptionHandler(0, "数据页写入磁盘时异常");
         }
     }
-
 
     public boolean UseDataBase(String name) throws MyExceptionHandler {
         for (BufferManager bufferManager : bufferManagers) {
@@ -123,7 +119,6 @@ public class CatalogManager {
             }
         }
     }
-
 
     public void DropIndex(String Index) throws MyExceptionHandler {
         for (IndexInfo indexInfo : indexInfos) {

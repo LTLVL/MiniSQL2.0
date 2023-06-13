@@ -426,7 +426,7 @@ public class Executor {
         String[] split = s.trim().toLowerCase().replaceAll(";", "").replaceAll("\"", "").split("\\s+");
         String table = split[2];
         try {
-            catalogManager.bufferManager.DropTable(table);
+            catalogManager.DropTable(table);
         } catch (MyExceptionHandler e) {
             e.printStackTrace();
         }
@@ -591,5 +591,9 @@ public class Executor {
             e.fillInStackTrace();
         }
 
+    }
+
+    public static void ShowTables() {
+        catalogManager.bufferManager.ShowTables();
     }
 }

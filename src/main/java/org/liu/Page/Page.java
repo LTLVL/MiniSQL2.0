@@ -72,7 +72,6 @@ public class Page implements Serializable {
         return res;
     }
 
-    //
     public boolean InsertRecord(Row row) throws MyExceptionHandler {
         Long rowSize = row.getRowSize();
 //        if (this.freeSpace.getFreeSize() < rowSize)
@@ -85,7 +84,7 @@ public class Page implements Serializable {
                         throw new MyExceptionHandler(0, "PRIMARY KEY约束冲突");
                     }
                 }
-            }else if(columns.get(i).isUnique()){
+            } else if (columns.get(i).isUnique()) {
                 for (Row value : rows) {
                     if (value.getFields().get(i).getValue().equals(row.getFields().get(i).getValue())) {
                         throw new MyExceptionHandler(0, "UNIQUE约束冲突");
@@ -105,7 +104,6 @@ public class Page implements Serializable {
         this.indexManager.insert(row);
         return true;
     }
-
 
     public int getFieldPos(String fieldName) {
         List<Column> columns = getTablePageHeader().getSchema().getColumns();
@@ -184,9 +182,15 @@ public class Page implements Serializable {
         return null;
     }
 
-    public BPlusTree CreateIndex(IndexInfo indexInfo) {
+    public BPlusTree CreateIndex(IndexInfo indexInfo) throws MyExceptionHandler {
         String primaryColumnName = this.tablePageHeader.getSchema().getColumns().get(this.PrimaryPos).getName();
-        if(indexInfo.getColumnName().equals(primaryColumnName)){
+        List<Column> columns = this.tablePageHeader.getSchema().getColumns();
+        for (Column column : columns) {
+            if (column.getName().equals(indexInfo.getColumnName()) && (!column.isUnique() && !column.isPrimaryKey())) {
+                throw new MyExceptionHandler(0, "非unique key不能建立索引");
+            }
+        }
+        if (indexInfo.getColumnName().equals(primaryColumnName)) {
             BPlusTree<Integer, Row> tree = new BPlusTree<>(171, getFieldPos(indexInfo.getColumnName()));
             for (Row row : rows) {
                 int PrimaryValue = row.getFields().get(PrimaryPos).getIntValue();
@@ -237,7 +241,6 @@ public class Page implements Serializable {
         indexManager.ColumnNames.add(indexInfo.getColumnName());
         return null;
     }
-
 
     public void DropIndex(IndexInfo indexInfo) throws MyExceptionHandler {
         if (indexInfo.getIndexName().equals(indexManager.PrimaryIndex.getIndexName())) {

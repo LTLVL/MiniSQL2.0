@@ -38,6 +38,7 @@ public class BPlusTree<K extends Comparable<K>, E> implements Serializable { //K
         }
         return root.searchLast();
     }
+
     public void insert(K entry, E value) {
         if (root == null) {
             root = new BPlusTreeLeafNode(asList(entry), asList(asSet(value)));
@@ -129,7 +130,6 @@ public class BPlusTree<K extends Comparable<K>, E> implements Serializable { //K
         }
         return root.toString();
     }
-
 
 
     abstract class BPlusTreeNode {
